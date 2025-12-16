@@ -1,0 +1,5 @@
+{
+  "name": "Ignis engine",
+  "description": "An interactive firework simulation where you describe the pyrotechnics in natural language, and Gemini AI designs the physics and visuals instantly.",
+  "requestFramePermissions": []
+}

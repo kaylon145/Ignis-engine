@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Ignis - AI Firework Generator</title>
+    
+    <!-- App Icons -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEyMCIgZmlsbD0iIzBmMTcyYSIvPjxwYXRoIGQ9Ik0yNTYgMTIwTDI1NiAxNjBNMjU2IDM1MkwyNTYgMzkyTTEyMCAyNTZMMTYwIDI1Nk0zNTIgMjU2TDM9MiAyNTZNMTYwIDE2MEwxODggMTg4TTMyNCAzMjRMMzUyIDM1Mk0xNjAgMzUyTDE4OCAzMjRNMzI0IDE4OEwzNTIgMTYwIiBzdHJva2U9IiM2MzY2ZjEiIHN0cm9rZS13aWR0aD0iMzIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxjaXJjbGUgY3g9IjI1NiIgY3k9IjI1NiIgcj0iNDgiIGZpbGw9IiNmYmJmMjQiLz48Y2lyY2xlIGN4PSIyNTYiIGN5PSIyNTYiIHI9IjkwIiBzdHJva2U9IiM4MThjZjgiIHN0cm9rZS13aWR0aD0iMTIiIGZpbGw9Im5vbmUiIG9wYWNpdHk9IjAuNSIvPjwvc3ZnPg==" />
+    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cmVjdCB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgcng9IjEyMCIgZmlsbD0iIzBmMTcyYSIvPjxwYXRoIGQ9Ik0yNTYgMTIwTDI1NiAxNjBNMjU2IDM1MkwyNTYgMzkyTTEyMCAyNTZMMTYwIDI1Nk0zNTIgMjU2TDM9MiAyNTZNMTYwIDE2MEwxODggMTg4TTMyNCAzMjRMMzUyIDM1Mk0xNjAgMzUyTDE4OCAzMjRNMzI0IDE4OEwzNTIgMTYwIiBzdHJva2U9IiM2MzY2ZjEiIHN0cm9rZS13aWR0aD0iMzIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxjaXJjbGUgY3g9IjI1NiIgY3k9IjI1NiIgcj0iNDgiIGZpbGw9IiNmYmJmMjQiLz48Y2lyY2xlIGN4PSIyNTYiIGN5PSIyNTYiIHI9IjkwIiBzdHJva2U9IiM4MThjZjgiIHN0cm9rZS13aWR0aD0iMTIiIGZpbGw9Im5vbmUiIG9wYWNpdHk9IjAuNSIvPjwvc3ZnPg==" />
+    
+    <!-- Mobile Web App Capability -->
+    <meta name="apple-mobile-web-app-title" content="Ignis">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#020617">
+
+    <script>
+      // Suppress Tailwind CDN production warning since we are in a browser-only preview environment
+      const originalWarn = console.warn;
+      console.warn = (...args) => {
+        if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) {
+          return;
+        }
+        originalWarn.apply(console, args);
+      };
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            animation: {
+              'bounce-slow': 'bounce 3s infinite',
+            }
+          }
+        }
+      }
+    </script>
+
+    <style>
+      html, body {
+        height: 100%;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background-color: #020617; /* Slate 950 */
+        font-family: 'Inter', sans-serif;
+        
+        /* iOS Mobile Optimizations */
+        overscroll-behavior: none;
+        touch-action: none;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+      }
+      canvas {
+        display: block;
+      }
+      /* Hide scrollbars */
+      ::-webkit-scrollbar {
+        display: none;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://esm.sh/@google/genai@^1.33.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react/": "https://esm.sh/react@^19.2.3/"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root">
+        <div class="fixed inset-0 flex items-center justify-center text-slate-500 text-sm font-light">
+            Loading Ignis...
+        </div>
+    </div>
+    <script type="module" src="./index.tsx"></script>
+  </body>
+</html>
