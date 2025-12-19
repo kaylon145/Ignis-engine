@@ -2,9 +2,9 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import FireworkCanvas, { FireworkCanvasHandle } from './components/FireworkCanvas';
 import Controls from './components/Controls';
 import MainMenu from './components/MainMenu';
-import { FireworkConfig, ExplosionShape, GraphicsQuality } from './types';
+import { FireworkConfig, ExplosionShape, GraphicsQuality, KaylonMode } from './types';
 import { generateFireworkConfig } from './services/geminiService';
-import { Flame, Menu } from 'lucide-react';
+import { Menu } from 'lucide-react';
 
 const INITIAL_CONFIG: FireworkConfig = {
   name: "Ignis Starter",
@@ -25,10 +25,12 @@ const App: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(true);
   const [isMenuClosing, setIsMenuClosing] = useState(false);
+  const [showGameHUD, setShowGameHUD] = useState(false);
   
   // Settings State
   const [volume, setVolume] = useState<number>(50);
   const [quality, setQuality] = useState<GraphicsQuality>('High');
+  const [kaylonMode, setKaylonMode] = useState<KaylonMode>('Matrix');
 
   const handleLaunch = useCallback((config: FireworkConfig) => {
     if (canvasRef.current) {
@@ -43,7 +45,6 @@ const App: React.FC = () => {
       setCurrentConfig(response.firework);
       setAiThought(response.thought);
       
-      // Auto-launch on generation for instant gratification
       if (canvasRef.current) {
         setTimeout(() => {
              canvasRef.current?.launch(response.firework);
@@ -75,7 +76,7 @@ const App: React.FC = () => {
     
     const shapes = Object.values(ExplosionShape);
     const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
-    const isRainbow = Math.random() > 0.7; // 30% chance of rainbow
+    const isRainbow = Math.random() > 0.7;
 
     const randomConfig: FireworkConfig = {
         name: isRainbow ? "Rainbow Surprise" : "Random Burst",
@@ -95,89 +96,106 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const handleSaveSettings = (newVolume: number, newQuality: GraphicsQuality) => {
+  const handleSaveSettings = (newVolume: number, newQuality: GraphicsQuality, newKaylonMode: KaylonMode) => {
       setVolume(newVolume);
       setQuality(newQuality);
+      setKaylonMode(newKaylonMode);
   };
 
   const handleStartGame = () => {
-    // Explicitly unlock audio context on iOS user gesture
     if (canvasRef.current) {
         canvasRef.current.unlockAudio();
     }
-    
     setIsMenuClosing(true);
-    // Delay unmounting to allow animation to finish
+    // Begin showing HUD slightly after the fade starts
+    setTimeout(() => {
+        setShowGameHUD(true);
+    }, 400);
+
     setTimeout(() => {
         setIsMenuOpen(false);
         setIsMenuClosing(false);
     }, 800);
   };
 
-  // Background Ambience for Menu
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | undefined;
-    
     if (isMenuOpen) {
-        // Launch one immediately if we just entered/loaded
         handleRandom();
-        
         interval = setInterval(() => {
-            // Randomly fire fireworks to keep the background alive but not chaotic
             if (Math.random() > 0.4) {
                 handleRandom();
             }
         }, 2000);
+    } else {
+        setShowGameHUD(true);
     }
-
     return () => {
         if (interval) clearInterval(interval);
     };
   }, [isMenuOpen, handleRandom]);
 
   return (
-    <div className="relative w-full h-[100dvh] overflow-hidden bg-slate-950 font-sans selection:bg-indigo-500/30">
-      {/* Persistent Background Visuals */}
-      <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-indigo-950/20 to-transparent pointer-events-none z-10" />
+    <div className="relative w-full h-[100dvh] overflow-hidden bg-slate-950 font-sans selection:bg-red-500/30">
+      {/* SVG Filters (Shared with In-Game Branding) */}
+      <svg width="0" height="0" className="absolute invisible pointer-events-none">
+        <defs>
+          <filter id="particle-displace-hud"><feTurbulence type="fractalNoise" baseFrequency="0.08" numOctaves="1" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="3" /></filter>
+          <filter id="liquid-wave-hud" x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="turbulence" baseFrequency="0.02 0.08" numOctaves="2" result="wave"><animate attributeName="baseFrequency" values="0.02 0.08; 0.022 0.1; 0.02 0.08" dur="4s" repeatCount="indefinite" /></feTurbulence><feDisplacementMap in="SourceGraphic" in2="wave" scale="8" /></filter>
+          <filter id="fire-warp-hud"><feTurbulence type="fractalNoise" baseFrequency="0.03 0.2" numOctaves="2" result="noise"><animate attributeName="baseFrequency" values="0.03 0.2;0.03 0.3;0.03 0.2" dur="1.5s" repeatCount="indefinite" /></feTurbulence><feDisplacementMap in="SourceGraphic" in2="noise" scale="10" /></filter>
+        </defs>
+      </svg>
+
+      <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-red-950/20 to-transparent pointer-events-none z-10" />
       
-      {/* The Canvas stays mounted so fireworks persist across menu transitions */}
       <FireworkCanvas 
         ref={canvasRef} 
         volume={volume}
         quality={quality}
+        kaylonMode={kaylonMode}
       />
 
-      {/* Main Menu Overlay */}
       {isMenuOpen && (
         <MainMenu 
             onStart={handleStartGame} 
             initialVolume={volume}
             initialQuality={quality}
+            initialKaylonMode={kaylonMode}
             onSaveSettings={handleSaveSettings}
             isClosing={isMenuClosing}
         />
       )}
 
-      {/* Game HUD (Only visible when menu is closed) */}
-      {!isMenuOpen && (
-        <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
-            {/* Header */}
+      {showGameHUD && !isMenuOpen && (
+        <div className="animate-in fade-in slide-in-from-bottom-8 duration-1000 ease-out">
+            {/* Header Redesigned to match Main Menu branding */}
             <header className="absolute top-6 left-6 z-10 pointer-events-none flex items-center justify-between w-[calc(100%-3rem)]">
-                <div className="flex items-center gap-3">
-                    <div className="p-2 bg-indigo-600 rounded-lg shadow-lg shadow-indigo-500/20 backdrop-blur-md">
-                        <Flame className="w-6 h-6 text-white" fill="white" />
+                <div className="flex items-center gap-4">
+                    {/* Mini Flame Logo */}
+                    <div className="relative p-3 bg-slate-900/40 border border-white/5 rounded-2xl backdrop-blur-xl shadow-xl overflow-hidden shrink-0">
+                         <div className="relative w-8 h-8" style={{ filter: 'url(#fire-warp-hud)' }}>
+                            <div className="absolute inset-0 bg-red-600 blur-xl opacity-30 animate-pulse" />
+                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-6 bg-gradient-to-t from-red-600 via-orange-500 to-transparent rounded-full animate-flame-main-hud" />
+                            <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-2 h-4 bg-gradient-to-t from-white via-yellow-100 to-transparent rounded-full animate-flame-core-hud" />
+                         </div>
                     </div>
-                    <div>
-                        <h1 className="text-2xl font-bold text-white tracking-tight drop-shadow-md">Ignis</h1>
-                        <p className="text-indigo-300 text-xs font-medium tracking-wider uppercase opacity-80">AI Pyrotechnics</p>
+                    
+                    {/* Mini Liquid Title */}
+                    <div className="flex flex-col" style={{ filter: 'url(#liquid-wave-hud)' }}>
+                        <h1 className="text-2xl md:text-3xl font-bold text-white tracking-[0.15em] font-brand italic leading-none">
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-red-400" style={{ filter: 'url(#particle-displace-hud)' }}>IGNIS</span>
+                        </h1>
+                        <p className="text-[8px] text-red-500 font-tech font-bold tracking-[0.6em] uppercase opacity-60 mt-1">Neural Engine</p>
                     </div>
                 </div>
 
-                {/* Return to Menu Button */}
                 <button 
-                    onClick={() => setIsMenuOpen(true)}
-                    className="pointer-events-auto p-2 bg-slate-900/50 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition-colors border border-slate-700/50 backdrop-blur-md"
-                    title="Main Menu"
+                    onClick={() => {
+                        setShowGameHUD(false);
+                        setIsMenuOpen(true);
+                    }}
+                    className="pointer-events-auto p-3 bg-slate-950/60 hover:bg-red-600/20 text-slate-400 hover:text-red-400 rounded-2xl transition-all border border-white/5 hover:border-red-500/40 backdrop-blur-xl shadow-2xl active:scale-90"
+                    title="Return to Menu"
                 >
                     <Menu className="w-5 h-5" />
                 </button>
@@ -193,14 +211,20 @@ const App: React.FC = () => {
                 aiThought={aiThought}
             />
             
-            {/* Info/Credits */}
-            <div className="absolute bottom-4 right-6 z-10 text-right pointer-events-none hidden md:block opacity-50">
-                <p className="text-slate-400 text-xs font-light">
-                Describe visual parameters • AI translates to physics
+            <div className="absolute bottom-4 right-6 z-10 text-right pointer-events-none hidden md:block opacity-40">
+                <p className="text-slate-500 text-[10px] font-tech uppercase tracking-[0.3em]">
+                   Pyrotechnic Sandbox v2.5
                 </p>
             </div>
         </div>
       )}
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes flame-main-hud { 0%, 100% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.1, 1.2); } }
+        @keyframes flame-core-hud { 0%, 100% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.1, 1.3); } }
+        .animate-flame-main-hud { animation: flame-main-hud 0.6s infinite ease-in-out; }
+        .animate-flame-core-hud { animation: flame-core-hud 0.4s infinite ease-in-out; }
+      `}} />
     </div>
   );
 };

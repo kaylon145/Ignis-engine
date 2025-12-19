@@ -8,6 +8,8 @@ export enum ExplosionShape {
 
 export type GraphicsQuality = 'Low' | 'High' | 'Ultra';
 
+export type KaylonMode = 'Vector' | 'Matrix';
+
 export interface FireworkConfig {
   name: string;
   primaryColor: string;
